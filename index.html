@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AIMEES WD — Orders & Services</title>
+  <meta name="description" content="AIMEES WD — Order custom graphics, websites, webapps and video edits." />
+  <style>
+    :root{
+      --bg:#f7f8fb; --card:#ffffff; --text:#0b1b17; --muted:#55606a; --accent:#0b6b3a; --glass: rgba(255,255,255,0.6);
+    }
+    [data-theme="dark"]{ --bg:#071018; --card:#071e14; --text:#e6f0ea; --muted:#98a7a0; --accent:#2bb673; --glass: rgba(255,255,255,0.04); }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale}
+    header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;gap:20px;background:linear-gradient(90deg, rgba(0,0,0,0.02), transparent);position:sticky;top:0;z-index:30}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo img{width:52px;height:52px;border-radius:30px;background:var(--accent);display:flex;align-items:center;justify-content:center;}
+    nav{display:flex;gap:12px;align-items:center}
+    nav a{padding:8px 12px;border-radius:8px;text-decoration:none;color:var(--text);font-weight:600}
+    nav a:hover{background:var(--glass)}
+    .hero{display:flex;gap:20px;align-items:center;padding:44px 28px;max-width:1200px;margin:30px auto}
+    .hero .left{flex:1}
+    .hero h1{font-size:28px;margin:0 0 8px}
+    .hero p{margin:0 0 18px;color:var(--muted)}
+    .hero .cta{display:flex;gap:12px}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:20px}
+    .card{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 6px 20px rgba(10,10,10,0.03)}
+    .card h3{margin:0 0 8px}
+    .services{max-width:1200px;margin:0 auto;padding:0 28px 60px}
+    footer{background:linear-gradient(0deg, rgba(0,0,0,0.02), transparent);padding:20px 28px;margin-top:40px}
+    .footer-grid{display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:0;background:var(--accent);color:#fff;text-decoration:none;font-weight:700}
+    .muted{color:var(--muted)}
+    /* Responsive */
+    @media (max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}.hero{flex-direction:column;align-items:flex-start}.logo{width:46px;height:46px}}
+    @media (max-width:700px){nav{display:none}header{padding:12px} .hero{padding:22px} .grid{grid-template-columns:1fr} .brand .title{display:none}}
+    /* form & modal */
+    .modal{position:fixed;inset:0;background:rgba(2,6,8,0.45);display:none;align-items:center;justify-content:center;padding:20px}
+    .modal.open{display:flex}
+    .modal .panel{width:100%;max-width:760px;background:var(--card);border-radius:12px;padding:18px;}
+    form .row{display:flex;gap:12px;margin-bottom:10px}
+    form label{font-size:13px;color:var(--muted)}
+    input[type=text],input[type=tel],input[type=email],select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);background:transparent}
+    textarea{min-height:100px}
+    .small{font-size:13px;color:var(--muted)}
+    .grid-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    @media (max-width:600px){.grid-cards{grid-template-columns:1fr}.card{padding:12px}}
+    /* admin panel */
+    .admin{padding:18px;background:var(--card);border-radius:10px}
+    .jobs-list{display:flex;flex-direction:column;gap:10px}
+    .chip{display:inline-block;padding:6px 8px;border-radius:999px;background:var(--glass);font-weight:600}
+  </style>
+</head>
+<body>
+  <!--
+    CONFIGURATION (edit these values in the top of script area):
+    const OWNER_EMAIL = 'owner@example.com'       // change to your email
+    const CALL_NUMBER = '+2347084821912'          // change to your phone
+    const FORMSPREE_ENDPOINT = ''                 // optional: set to Formspree or your webhook URL
+  -->
+
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden><img src="AIMEES WD.png" alt=""></div>
+      <div>
+        <div class="title" style="font-weight:800">AIMEES WD</div>
+        <div class="small">Advanced Innovation in Machine Learning, Encryption & Expert Systems</div>
+      </div>
+    </div>
+
+    <nav>
+      <a href="#home" data-link>Home</a>
+      <a href="#services" data-link>Services</a>
+      <a href="#partner" data-link>Partner</a>
+      <a href="#support" data-link>Support</a>
+      <a href="#about" data-link>About</a>
+      <a href="#contact" data-link>Contact</a>
+      <button id="open-order" class="btn">Order Now</button>
+    </nav>
+
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="mobile-menu-toggle" style="display:none">☰</button>
+      <button id="dark-toggle" aria-label="toggle dark">🌙</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="home" class="hero">
+      <div class="left">
+        <h1>Fast, friendly design & development — AIMEES WD</h1>
+        <p class="muted">Order posters, flyers, stickers, websites, webapps or video edits. Choose details, preferred platform to be contacted, and we’ll notify you or send an email to the owner.</p>
+        <div class="cta">
+          <button id="open-order-cta" class="btn">Order a design</button>
+          <a href="#services" data-link class="muted" style="padding:10px 14px;border-radius:10px">Explore services</a>
+        </div>
+      </div>
+      <div style="min-width:220px;max-width:380px">
+        <div class="card">
+          <h3>Quick pick</h3>
+          <div class="grid-cards">
+            <div class="card small">
+              <strong>Graphics</strong>
+              <div class="muted">Poster, Flyer, Sticker — choose size & finish</div>
+              <div style="margin-top:8px"><button class="btn" data-service="Graphics">Select</button></div>
+            </div>
+            <div class="card small">
+              <strong>Websites</strong>
+              <div class="muted">Portfolio, Business, Shop — choose pages & CMS</div>
+              <div style="margin-top:8px"><button class="btn" data-service="Websites">Select</button></div>
+            </div>
+            <div class="card small">
+              <strong>WebApps</strong>
+              <div class="muted">Dashboard, SaaS, Internal tools</div>
+              <div style="margin-top:8px"><button class="btn" data-service="WebApps">Select</button></div>
+            </div>
+            <div class="card small">
+              <strong>Video Edit</strong>
+              <div class="muted">Short ads, long edits, social format</div>
+              <div style="margin-top:8px"><button class="btn" data-service="Video Edit">Select</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="services" class="services">
+      <h2>Services</h2>
+      <p class="muted">Choose a category to configure your request.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Graphics</h3>
+          <p class="muted">Poster, Flyer, Sticker design with size & format options.</p>
+          <ul>
+            <li>Poster — A4, A3, Custom</li>
+            <li>Flyer — A5, DL, Custom</li>
+            <li>Sticker — round, square (mm or inches)</li>
+          </ul>
+          <div style="margin-top:10px"><button class="btn" data-service="Graphics">Order Graphics</button></div>
+        </div>
+
+        <div class="card">
+          <h3>Websites</h3>
+          <p class="muted">Business, Portfolio, E-commerce with responsive design.</p>
+          <ul>
+            <li>Pages: Home, About, Contact, Blog, Shop</li>
+            <li>Features: CMS, Payments, Contact forms</li>
+          </ul>
+          <div style="margin-top:10px"><button class="btn" data-service="Websites">Order Website</button></div>
+        </div>
+
+        <div class="card">
+          <h3>WebApps</h3>
+          <p class="muted">SaaS, dashboards, internal tools with auth & databases.</p>
+          <ul>
+            <li>Integrations, APIs, Admin panel</li>
+            <li>Hosting & deployment guidance</li>
+          </ul>
+          <div style="margin-top:10px"><button class="btn" data-service="WebApps">Order WebApp</button></div>
+        </div>
+
+        <div class="card">
+          <h3>Video Edit</h3>
+          <p class="muted">Short-form edits for social, ads, or long-form edits.</p>
+          <ul>
+            <li>Format: 16:9, 9:16, 1:1</li>
+            <li>Includes captions, basic color grade</li>
+          </ul>
+          <div style="margin-top:10px"><button class="btn" data-service="Video Edit">Order Video</button></div>
+        </div>
+      </div>
+
+      <hr style="margin:26px 0"/>
+
+      <h3>How to order</h3>
+      <p class="muted">Click an "Order" button or the central "Order Now" to open the order panel. Choose the type, complete the details including preferred platform to chat (WhatsApp, Telegram, Phone call, Email), and submit. The form will construct an email to the site owner and optionally post to a webhook if configured.</p>
+    </section>
+
+    <section id="partner" class="services" style="margin-top:10px">
+      <h2>Partner / Careers</h2>
+      <p class="muted">Want to partner with AIMEES WD or apply for a job? Postings are editable from a lightweight admin interface (local to the site) — for production you'll want a real backend or CMS. Below you can apply or add job openings (owner/admin only).</p>
+
+      <div class="card">
+        <h3>Open positions</h3>
+        <div id="jobs" class="jobs-list"></div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button id="apply-job" class="btn">Apply to a Job</button>
+          <button id="admin-jobs" class="btn">Admin: Manage Jobs</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="support" class="services">
+      <h2>Support</h2>
+      <p class="muted">Support requests or FAQs will be handled here. You can also start a chat request using preferred platform and provide details.</p>
+      <div class="card">
+        <h3>Contact support</h3>
+        <p class="muted">Use the Order form and select "Support" as a service or email the owner directly.</p>
+      </div>
+    </section>
+
+    <section id="about" class="services">
+      <h2>About AIMEES WD</h2>
+      <p class="muted">AIMEES WD — Advanced Innovation in Machine Learning, Encryption and Expert Systems Worlds Developer. We build designs, websites and apps with privacy and performance in mind.</p>
+    </section>
+
+    <section id="contact" class="services">
+      <h2>Contact</h2>
+      <p class="muted">Call us or use the order form.</p>
+      <div class="card">
+        <strong>Call us:</strong> <a id="call-link" href="tel:+2347084821912">+234 708 482 1912</a>
+        <div style="margin-top:8px">
+          <strong>Email (owner):</strong> <span id="owner-email">owner@example.com</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="footer-grid">
+      <div>
+        <strong>AIMEES WD</strong>
+        <div class="small muted">Advanced Innovation in Machine Learning, Encryption & Expert Systems</div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <a id="footer-dark" class="chip">Switch to dark mode</a>
+        <a id="footer-support" href="#support" data-link class="chip">Support</a>
+        <a id="footer-donate" class="chip">Donate</a>
+        <a id="footer-call" class="chip" href="tel:+2347084821912">Call us</a>
+      </div>
+      <div class="muted">© <span id="year"></span> AIMEES WD</div>
+    </div>
+  </footer>
+
+  <!-- Modal / Order panel -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong>Create order</strong>
+        <button id="close-modal">✕</button>
+      </div>
+
+      <form id="order-form">
+        <div class="row">
+          <div style="flex:1">
+            <label>Full name</label>
+            <input name="name" type="text" placeholder="Jane Doe" required />
+          </div>
+          <div style="width:180px">
+            <label>Phone</label>
+            <input name="phone" type="tel" placeholder="+234..." required />
+          </div>
+        </div>
+
+        <div class="row">
+          <div style="flex:1">
+            <label>Email</label>
+            <input name="email" type="email" placeholder="you@example.com" />
+          </div>
+          <div style="width:220px">
+            <label>Preferred contact</label>
+            <select name="contactPlatform">
+              <option>WhatsApp</option>
+              <option>Telegram</option>
+              <option>Email</option>
+              <option>Phone call</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom:10px">
+          <label>Service</label>
+          <select name="service" id="service-select">
+            <option>Graphics</option>
+            <option>Websites</option>
+            <option>WebApps</option>
+            <option>Video Edit</option>
+            <option>Support</option>
+          </select>
+        </div>
+
+        <div id="dynamic-options" style="margin-bottom:10px">
+          <!-- Specific options show here -->
+        </div>
+
+        <div style="margin-bottom:10px">
+          <label>Details (sizes, pages, formats, deadlines)</label>
+          <textarea name="details" placeholder="Tell us what you need..."></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button type="button" id="save-local" class="btn">Save local</button>
+          <button type="submit" class="btn">Send order</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ---------- CONFIGURE HERE ----------
+    const OWNER_EMAIL = 'owner@example.com';     // CHANGE to your email
+    const CALL_NUMBER = '+2347084821912';        // default phone (change if needed)
+    const FORMSPREE_ENDPOINT = '';               // optional: e.g. 'https://formspree.io/f/xyz'
+    // -------------------------------------
+
+    document.getElementById('owner-email').innerText = OWNER_EMAIL;
+    document.getElementById('call-link').href = 'tel:' + CALL_NUMBER;
+    document.getElementById('footer-call').href = 'tel:' + CALL_NUMBER;
+    document.getElementById('year').innerText = new Date().getFullYear();
+
+    // navigation (simple SPA-like)
+    document.querySelectorAll('[data-link]').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const target = a.getAttribute('href').replace('#','');
+        const el = document.getElementById(target);
+        if(el) el.scrollIntoView({behavior:'smooth'});
+      });
+    });
+
+    // dark mode
+    const darkToggle = document.getElementById('dark-toggle');
+    const footerDark = document.getElementById('footer-dark');
+    function setDark(enabled){
+      if(enabled) document.documentElement.setAttribute('data-theme','dark');
+      else document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('site-dark', enabled ? '1' : '0');
+    }
+    darkToggle.addEventListener('click', ()=> setDark(!document.documentElement.hasAttribute('data-theme')));
+    footerDark.addEventListener('click', ()=> darkToggle.click());
+    if(localStorage.getItem('site-dark') === '1') setDark(true);
+
+    // open order modal
+    const modal = document.getElementById('modal');
+    const openBtns = document.querySelectorAll('#open-order,#open-order-cta,#open-order-cta2,#open-order-cta3,#open-order-cta4,#open-order,#open-order-cta');
+    openBtns.forEach(b=>b && b.addEventListener('click',()=> openModal()));
+    document.querySelectorAll('button[data-service]').forEach(b=> b.addEventListener('click', e=> openModal(b.dataset.service)));
+
+    document.getElementById('close-modal').addEventListener('click',()=> modal.classList.remove('open'));
+
+    function openModal(defaultService){
+      modal.classList.add('open');
+      if(defaultService) document.getElementById('service-select').value = defaultService;
+      renderDynamicOptions();
+    }
+
+    // dynamic service options
+    const dynamicOptions = document.getElementById('dynamic-options');
+    const serviceSelect = document.getElementById('service-select');
+    serviceSelect.addEventListener('change', renderDynamicOptions);
+    function renderDynamicOptions(){
+      const s = serviceSelect.value;
+      let html = '';
+      if(s === 'Graphics'){
+        html = `
+          <div class="row">
+            <div style="flex:1"><label>Type</label><select name="graphicType"><option>Poster</option><option>Flyer</option><option>Sticker</option></select></div>
+            <div style="width:160px"><label>Size</label><input name="graphicSize" placeholder="A4 / 4x6in" type="text"/></div>
+          </div>
+        `;
+      } else if(s === 'Websites'){
+        html = `
+          <div class="row">
+            <div style="flex:1"><label>Site type</label><select name="siteType"><option>Portfolio</option><option>Business</option><option>E-commerce</option></select></div>
+            <div style="width:160px"><label>Pages</label><input name="sitePages" placeholder="e.g. Home,About,Blog,Shop"/></div>
+          </div>
+        `;
+      } else if(s === 'WebApps'){
+        html = `
+          <div class="row">
+            <div style="flex:1"><label>App type</label><select name="appType"><option>Dashboard</option><option>SaaS</option><option>Internal tool</option></select></div>
+            <div style="width:160px"><label>Users</label><input name="appUsers" placeholder="small/medium/enterprise"/></div>
+          </div>
+        `;
+      } else if(s === 'Video Edit'){
+        html = `
+          <div class="row">
+            <div style="flex:1"><label>Format</label><select name="videoFormat"><option>16:9</option><option>9:16</option><option>1:1</option></select></div>
+            <div style="width:160px"><label>Length</label><input name="videoLength" placeholder="seconds or minutes"/></div>
+          </div>
+        `;
+      } else if(s === 'Support'){
+        html = `<div class="small muted">Support request — describe your issue in "Details" and we'll follow up.</div>`;
+      }
+      dynamicOptions.innerHTML = html;
+    }
+
+    // form handling
+    const form = document.getElementById('order-form');
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(form);
+      const payload = {};
+      for(const [k,v] of fd.entries()) payload[k]=v;
+      payload._submittedAt = new Date().toISOString();
+
+      // save to local submissions (owner can view via admin)
+      saveSubmission(payload);
+
+      // 1) try to post to FORMSPREE if configured
+      if(FORMSPREE_ENDPOINT){
+        try{
+          await fetch(FORMSPREE_ENDPOINT, {method:'POST',headers:{'Content-Type':'application/json'},body: JSON.stringify(payload)});
+        }catch(err){ console.warn('Formspree post failed', err); }
+      }
+
+      // 2) open user's email client with prefilled mailto to OWNER_EMAIL
+      const subject = encodeURIComponent('New order — ' + (payload.service || 'Order'));
+      const body = encodeURIComponent(Object.entries(payload).map(([k,v])=>`${k}: ${v}`).join('\n'));
+      const mailto = `mailto:${OWNER_EMAIL}?subject=${subject}&body=${body}`;
+      window.location.href = mailto;
+
+      alert('Order prepared — your email client should open. A local copy was saved for owner review.');
+      form.reset();
+      modal.classList.remove('open');
+    });
+
+    // local submissions storage
+    function saveSubmission(obj){
+      const all = JSON.parse(localStorage.getItem('submissions')||'[]');
+      all.unshift(obj);
+      localStorage.setItem('submissions', JSON.stringify(all));
+    }
+
+    // admin: manage jobs & view submissions
+    document.getElementById('admin-jobs').addEventListener('click', ()=> openAdmin());
+    document.getElementById('apply-job').addEventListener('click', ()=> alert('To apply: open the Order form and choose "Support" or include "Applying for job" in details.'));
+
+    function openAdmin(){
+      const pass = prompt('Admin access — enter passphrase');
+      // NOTE: This is a lightweight local admin for demo. For production use a secure backend.
+      if(!pass) return;
+      if(pass !== 'aimees-admin') { alert('Wrong passphrase'); return; }
+
+      // show admin panel in modal
+      modal.classList.add('open');
+      const panel = modal.querySelector('.panel');
+      panel.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <strong>Admin — Jobs & Submissions</strong>
+          <button id="admin-close">Close</button>
+        </div>
+        <div style="display:flex;gap:10px;flex-direction:column">
+          <div class="admin">
+            <h4>Post a job / partnership</h4>
+            <label>Title</label>
+            <input id="job-title" placeholder="e.g. UI Designer" />
+            <label>Description</label>
+            <textarea id="job-desc" placeholder="Responsibilities and how to apply"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button id="job-save" class="btn">Save job</button>
+              <button id="job-clear" class="btn">Clear all jobs</button>
+            </div>
+            <div style="margin-top:12px">
+              <h5>Current jobs</h5>
+              <div id="job-list"></div>
+            </div>
+          </div>
+
+          <div class="admin">
+            <h4>Submissions</h4>
+            <div id="submissions-list"></div>
+            <div style="margin-top:8px"><button id="clear-submissions" class="btn">Clear submissions</button></div>
+          </div>
+        </div>
+      `;
+
+      // attach handlers
+      document.getElementById('admin-close').addEventListener('click', ()=> { modal.classList.remove('open'); location.reload(); });
+      document.getElementById('job-save').addEventListener('click', ()=>{
+        const t = document.getElementById('job-title').value.trim();
+        const d = document.getElementById('job-desc').value.trim();
+        if(!t || !d) return alert('Please fill title & description');
+        const jobs = JSON.parse(localStorage.getItem('jobs')||'[]');
+        jobs.unshift({title:t,desc:d,created:new Date().toISOString()});
+        localStorage.setItem('jobs', JSON.stringify(jobs));
+        renderJobsAdmin();
+        renderJobsOnPage();
+        document.getElementById('job-title').value=''; document.getElementById('job-desc').value='';
+      });
+      document.getElementById('job-clear').addEventListener('click', ()=>{ if(confirm('Clear all jobs?')){ localStorage.removeItem('jobs'); renderJobsAdmin(); renderJobsOnPage(); } });
+      document.getElementById('clear-submissions').addEventListener('click', ()=>{ if(confirm('Clear submissions?')){ localStorage.removeItem('submissions'); renderSubmissions(); } });
+
+      function renderJobsAdmin(){
+        const el = document.getElementById('job-list'); el.innerHTML='';
+        const jobs = JSON.parse(localStorage.getItem('jobs')||'[]');
+        if(!jobs.length) el.innerHTML = '<div class="muted">No jobs</div>';
+        for(const j of jobs){
+          const d = document.createElement('div'); d.className='card'; d.style.padding='8px'; d.innerHTML = `<strong>${j.title}</strong><div class="muted" style="font-size:13px">${j.desc}</div><div class="small">Posted: ${new Date(j.created).toLocaleString()}</div>`;
+          el.appendChild(d);
+        }
+      }
+      function renderSubmissions(){
+        const el = document.getElementById('submissions-list'); el.innerHTML='';
+        const subs = JSON.parse(localStorage.getItem('submissions')||'[]');
+        if(!subs.length) el.innerHTML = '<div class="muted">No submissions yet</div>';
+        for(const s of subs){
+          const d = document.createElement('div'); d.className='card'; d.style.padding='8px'; d.innerHTML = `<div><strong>${s.name||'—'}</strong> <span class="muted">(${s.phone||'—'})</span></div><div class="small">Service: ${s.service||'—'}</div><div class="muted">${s.details||''}</div><div class="small">Submitted: ${new Date(s._submittedAt).toLocaleString()}</div>`;
+          el.appendChild(d);
+        }
+      }
+
+      renderJobsAdmin(); renderSubmissions();
+    }
+
+    // jobs on page
+    function renderJobsOnPage(){
+      const el = document.getElementById('jobs'); el.innerHTML='';
+      const jobs = JSON.parse(localStorage.getItem('jobs')||'[]');
+      if(!jobs.length) el.innerHTML = '<div class="muted">No open positions at the moment.</div>';
+      for(const j of jobs){
+        const d = document.createElement('div'); d.className='card'; d.style.padding='12px'; d.innerHTML = `<strong>${j.title}</strong><div class="muted">${j.desc}</div><div style="margin-top:8px"><button class="btn" data-apply>Apply</button></div>`;
+        el.appendChild(d);
+      }
+      document.querySelectorAll('[data-apply]').forEach(b=> b.addEventListener('click', ()=> alert('To apply, open the Order form and include the job title in details.')));
+    }
+
+    renderJobsOnPage();
+
+    // save local button
+    document.getElementById('save-local').addEventListener('click', ()=>{
+      const fd = new FormData(form);
+      const payload = {};
+      for(const [k,v] of fd.entries()) payload[k]=v;
+      payload._savedAt = new Date().toISOString();
+      const saves = JSON.parse(localStorage.getItem('drafts')||'[]'); saves.unshift(payload); localStorage.setItem('drafts', JSON.stringify(saves));
+      alert('Saved locally. You can resume later from this browser.');
+    });
+
+    // wire up some quick selectors
+    document.querySelectorAll('button[data-service]').forEach(b=> b.addEventListener('click', e=>{
+      const s = b.getAttribute('data-service'); openModal(s);
+    }));
+
+  </script>
+</body>
+</html>
