@@ -4,7 +4,7 @@ const OWNER_EMAIL = 'adelekealameen16@gmail.com';
 const CALL_NUMBER = '+2349132252381';
 // When you create Formspree, paste the endpoint here, e.g.
 // const FORMSPREE_ENDPOINT = 'https://formspree.io/f/your-id';
-const FORMSPREE_ENDPOINT = ''; // <-- paste endpoint when ready
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mjkzjdbd'; // <-- paste endpoint when ready
 // =================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -327,3 +327,4 @@ document.addEventListener('DOMContentLoaded', () => {
   renderJobsOnPage();
   renderCartCount();
 });
+
