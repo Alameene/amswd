@@ -1,46 +1,41 @@
-// AIMEES WD - unified script.js
-// Config - set by you
+// script.js - AIMEES WD (single robust script)
+// Config - change if needed
 const OWNER_EMAIL = 'adelekealameen16@gmail.com';
 const CALL_NUMBER = '+2349132252381';
-const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mjkzjdbd';
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mjkzjdbd'; // your endpoint
 
-// Helper: safe query
+// Helper short-hands
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+const safe = (fn) => { try { return fn(); } catch (e) { console.warn('safe error', e); return null; } };
 
-// Safe innerText set
-function safeSetText(sel, txt){
-  const el = $(sel);
-  if(el) el.innerText = txt;
-}
-
-// simple escape for injecting values into innerHTML templates
+// Small escape for injecting text
 function esc(s){ if(typeof s !== 'string') return s; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 // Local storage helpers
-function read(key){ try{ return JSON.parse(localStorage.getItem(key) || '[]'); }catch(e){ return []; } }
-function write(key, v){ localStorage.setItem(key, JSON.stringify(v)); }
+function read(key){ try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } }
+function write(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
 
-// Cart helpers
+// CART helpers
 function getCart(){ return read('cart'); }
-function setCart(arr){ write('cart', arr); renderCartCount(); }
-function addToCart(item){ const c = getCart(); c.push(item); setCart(c); }
-function removeFromCart(i){ const c = getCart(); c.splice(i,1); setCart(c); renderCartItems(); }
-function updateCartItem(i, fields){ const c = getCart(); c[i] = Object.assign({}, c[i], fields); setCart(c); renderCartItems(); }
+function saveCart(arr){ write('cart', arr); renderCartCount(); }
+function addToCart(item){ const c = getCart(); c.push(item); saveCart(c); }
+function removeFromCart(i){ const c = getCart(); c.splice(i,1); saveCart(c); renderCartItems(); }
+function updateCartItem(i, fields){ const c = getCart(); c[i] = Object.assign({}, c[i], fields); saveCart(c); renderCartItems(); }
 function renderCartCount(){ const el = $('#cart-count'); if(el) el.innerText = getCart().length; }
 
-// Render cart items in cart modal
+// Render cart items into cart modal
 function renderCartItems(){
-  const el = $('#cart-items');
-  if(!el) return;
+  const container = $('#cart-items');
+  if(!container) return;
   const cart = getCart();
-  el.innerHTML = '';
-  if(!cart.length){ el.innerHTML = '<div class="muted">Cart is empty</div>'; return; }
+  container.innerHTML = '';
+  if(!cart.length){ container.innerHTML = '<div class="muted">Cart is empty</div>'; return; }
   cart.forEach((it, idx) => {
-    const div = document.createElement('div');
-    div.className = 'card';
-    div.style.padding = '8px';
-    div.innerHTML = `
+    const row = document.createElement('div');
+    row.className = 'card';
+    row.style.padding = '8px';
+    row.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center">
         <strong>${esc(it.service)}</strong>
         <button data-idx="${idx}" class="btn remove-item">Remove</button>
@@ -54,10 +49,10 @@ function renderCartItems(){
         <input data-idx="${idx}" class="cart-price" value="${esc(it.offerPrice||'')}" placeholder="e.g. 50000" />
       </div>
     `;
-    el.appendChild(div);
+    container.appendChild(row);
   });
 
-  // attach handlers
+  // Attach handlers (re-bind)
   $$('.remove-item').forEach(btn => btn.addEventListener('click', (e) => {
     const i = Number(btn.getAttribute('data-idx')); removeFromCart(i);
   }));
@@ -69,7 +64,7 @@ function renderCartItems(){
   }));
 }
 
-// Dynamic options for service selector
+// Dynamic options for service selection
 function renderDynamicOptions(){
   const dyn = $('#dynamic-options');
   const sel = $('#service-select');
@@ -103,91 +98,178 @@ function saveSubmissionLocal(obj){
   const arr = read('submissions'); arr.unshift(obj); write('submissions', arr);
 }
 
-// Submit order (Formspree + local storage). NO mailto fallback.
-async function submitOrderPayload(payload){
-  // local backup
+// Send payload (Formspree + local backup). No mailto fallback.
+async function sendOrder(payload){
   saveSubmissionLocal(payload);
-
-  // attempt to POST to Formspree (best-effort)
-  if (FORMSPREE_ENDPOINT && FORMSPREE_ENDPOINT.length > 5) {
+  if (FORMSPREE_ENDPOINT && FORMSPREE_ENDPOINT.length > 5){
     try {
       await fetch(FORMSPREE_ENDPOINT, {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-    } catch (err) {
-      console.warn('Formspree POST failed', err);
-    }
+    } catch (err) { console.warn('Formspree POST failed', err); }
   }
-
-  // success flow
   alert('Order submitted — thank you! We will contact you soon.');
-  const form = $('#order-form');
-  if (form) form.reset();
-  $('.modal.open')?.classList.remove('open'); // close open modal if exists
-  localStorage.removeItem('cart');
-  renderCartCount();
+  const form = $('#order-form'); if(form) form.reset();
+  $('#modal')?.classList.remove('open');
+  localStorage.removeItem('cart'); renderCartCount();
 }
 
-// Wire up UI events (safe)
-function wireUI(){
-  // set contact details in UI if present
-  safeSetText('#owner-email', OWNER_EMAIL);
-  const callEl = $('#call-link'); if(callEl) callEl.href = 'tel:' + CALL_NUMBER;
-  const footerCall = $('#footer-call'); if(footerCall) footerCall.href = 'tel:' + CALL_NUMBER;
-  safeSetText('#year', String(new Date().getFullYear()));
+// Safe wiring when DOM is ready
+function wireUp(){
+  // set contact details if present
+  safe(() => { $('#owner-email').innerText = OWNER_EMAIL; $('#call-link').href = 'tel:' + CALL_NUMBER; $('#footer-call').href = 'tel:' + CALL_NUMBER; $('#year').innerText = new Date().getFullYear(); });
+
+  // ensure default dark
+  safe(() => { document.documentElement.setAttribute('data-theme','dark'); localStorage.setItem('site-dark','1'); });
 
   // nav smooth
-  $$('[data-link]').forEach(a => a.addEventListener('click', (e) => {
-    e.preventDefault();
-    const target = a.getAttribute('href')?.replace('#','');
-    if(!target) return;
-    const el = document.getElementById(target);
-    if(el) el.scrollIntoView({behavior:'smooth'});
-  }));
+  $$('.nav, [data-link]').forEach(()=>{}); // noop to avoid errors if nav selectors differ
+  $$('[data-link]').forEach(a => a.addEventListener('click', (e) => { e.preventDefault(); const t = a.getAttribute('href')?.replace('#',''); if(!t) return; const el = document.getElementById(t); if(el) el.scrollIntoView({behavior:'smooth'}); }));
 
-  // dark toggle (keeps default dark)
-  const darkToggle = $('#dark-toggle');
-  const footerDark = $('#footer-dark');
-  function setDark(enabled){ if(enabled) document.documentElement.setAttribute('data-theme','dark'); else document.documentElement.removeAttribute('data-theme'); localStorage.setItem('site-dark', enabled ? '1' : '0'); }
-  if (localStorage.getItem('site-dark') === '1') setDark(true);
-  darkToggle?.addEventListener('click', ()=> setDark(!document.documentElement.hasAttribute('data-theme')));
-  footerDark?.addEventListener('click', ()=> darkToggle?.click());
-
-  // modal open/close
+  // UI buttons (defensive)
   $('#open-order')?.addEventListener('click', ()=> { $('#modal')?.classList.add('open'); renderDynamicOptions(); $('#modal-title') && ($('#modal-title').innerText = 'Create order'); });
   $('#open-order-cta')?.addEventListener('click', ()=> { $('#modal')?.classList.add('open'); renderDynamicOptions(); });
-  $('#close-modal')?.addEventListener('click', ()=> $('#modal')?.classList.remove('open'));
   $('#open-contract')?.addEventListener('click', ()=> $('#contract-modal')?.classList.add('open'));
   $('#close-contract')?.addEventListener('click', ()=> $('#contract-modal')?.classList.remove('open'));
+  $('#close-modal')?.addEventListener('click', ()=> $('#modal')?.classList.remove('open'));
+  $('#close-cart')?.addEventListener('click', ()=> $('#cart-modal')?.classList.remove('open'));
 
-  // add-to-cart (cards)
-  $$('.add-to-cart').forEach(b => b.addEventListener('click', () => {
-    const svc = b.getAttribute('data-service') || 'Service';
-    addToCart({ service: svc, details:'', offerPrice:'' });
-    alert(`${svc} added to cart`);
-  }));
+  // add-to-cart buttons (cards)
+  $$('.add-to-cart').forEach(b => {
+    b.addEventListener('click', () => {
+      const svc = b.getAttribute('data-service') || 'Service';
+      addToCart({ service: svc, details: '', offerPrice: '' });
+      alert(svc + ' added to cart');
+    });
+  });
 
-  // modal add-to-cart
+  // add to cart inside modal
   $('#add-to-cart-btn')?.addEventListener('click', () => {
-    const form = $('#order-form');
-    if(!form) return alert('Order form not found');
+    const form = $('#order-form'); if(!form) return alert('Order form not found');
     const fd = new FormData(form);
     const item = { service: fd.get('service'), details: fd.get('details')||'', offerPrice: fd.get('offerPrice')||'' };
     addToCart(item);
     alert('Added to cart');
   });
 
-  // cart button open
+  // cart open
   $('#cart-btn')?.addEventListener('click', () => { renderCartItems(); $('#cart-modal')?.classList.add('open'); });
 
   // clear cart
-  $('#clear-cart')?.addEventListener('click', ()=> { if(confirm('Clear cart?')){ localStorage.removeItem('cart'); renderCartItems(); renderCartCount(); }});
+  $('#clear-cart')?.addEventListener('click', ()=> { if(confirm('Clear cart?')){ localStorage.removeItem('cart'); renderCartItems(); renderCartCount(); } });
 
-  // checkout from cart (open modal and prefill details)
+  // checkout from cart -> open modal prefilled
   $('#checkout-cart')?.addEventListener('click', ()=> {
     const cart = getCart(); if(!cart.length) return alert('Cart is empty');
+    $('#modal')?.classList.add('open');
+    $('#modal-title') && ($('#modal-title').innerText = 'Checkout — finalize order');
+    const details = cart.map((c,i)=>`${i+1}. ${c.service} — details: ${c.details||'-'} — offer: ${c.offerPrice||'-'}`).join('\n');
+    const area = document.querySelector('#order-form textarea[name="details"]'); if(area) area.value = details;
+  });
+
+  // service select dynamic options
+  $('#service-select')?.addEventListener('change', renderDynamicOptions);
+  renderDynamicOptions();
+
+  // order form submit
+  const orderForm = $('#order-form');
+  if(orderForm){
+    orderForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if($('#terms-check') && !$('#terms-check').checked){ alert('Please accept the Terms & Conditions before submitting'); return; }
+      const fd = new FormData(orderForm); const payload = {};
+      for(const [k,v] of fd.entries()) payload[k] = v;
+      payload._submittedAt = new Date().toISOString();
+      payload.cart = getCart();
+      await sendOrder(payload);
+    });
+  }
+
+  // contract form
+  $('#contract-form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target); const obj = {};
+    for(const [k,v] of fd.entries()) obj[k] = v;
+    obj._requestedAt = new Date().toISOString();
+    const arr = read('contracts'); arr.unshift(obj); write('contracts', arr);
+    alert('Contract request saved locally. We will contact you.');
+    $('#contract-modal')?.classList.remove('open');
+  });
+
+  // admin
+  $('#admin-jobs')?.addEventListener('click', ()=> {
+    const pass = prompt('Admin access — enter passphrase'); if(!pass) return; if(pass !== 'aimees-admin'){ alert('Wrong passphrase'); return; }
+    openAdmin();
+  });
+  $('#apply-job')?.addEventListener('click', ()=> alert('To apply: open the Order form and include "Applying for job" in details.'));
+
+  function openAdmin(){
+    $('#modal')?.classList.add('open');
+    const panel = $('#modal .panel'); if(!panel) return;
+    panel.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong>Admin — Jobs, Submissions & Contracts</strong>
+        <button id="admin-close">Close</button>
+      </div>
+      <div style="display:flex;gap:10px;flex-direction:column">
+        <div class="admin">
+          <h4>Post a job / partnership</h4>
+          <label>Title</label><input id="job-title" placeholder="e.g. UI Designer" />
+          <label>Description</label><textarea id="job-desc" placeholder="Responsibilities and how to apply"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px"><button id="job-save" class="btn">Save job</button><button id="job-clear" class="btn">Clear all jobs</button></div>
+          <div style="margin-top:12px"><h5>Current jobs</h5><div id="job-list"></div></div>
+        </div>
+        <div class="admin">
+          <h4>Submissions</h4><div id="submissions-list"></div><div style="margin-top:8px"><button id="clear-submissions" class="btn">Clear submissions</button></div>
+        </div>
+        <div class="admin">
+          <h4>Contract requests</h4><div id="contracts-list"></div><div style="margin-top:8px"><button id="clear-contracts" class="btn">Clear contract requests</button></div>
+        </div>
+      </div>
+    `;
+    $('#admin-close')?.addEventListener('click', ()=> { $('#modal')?.classList.remove('open'); location.reload(); });
+    $('#job-save')?.addEventListener('click', ()=> {
+      const t = $('#job-title').value.trim(); const d = $('#job-desc').value.trim(); if(!t||!d) return alert('Please fill title & description');
+      const jobs = read('jobs'); jobs.unshift({ title:t, desc:d, created: new Date().toISOString() }); write('jobs', jobs);
+      renderJobsAdmin(); renderJobsOnPage();
+      $('#job-title').value=''; $('#job-desc').value='';
+    });
+    $('#job-clear')?.addEventListener('click', ()=> { if(confirm('Clear all jobs?')){ localStorage.removeItem('jobs'); renderJobsAdmin(); renderJobsOnPage(); }});
+    $('#clear-submissions')?.addEventListener('click', ()=> { if(confirm('Clear submissions?')){ localStorage.removeItem('submissions'); renderSubmissions(); }});
+    $('#clear-contracts')?.addEventListener('click', ()=> { if(confirm('Clear contract requests?')){ localStorage.removeItem('contracts'); renderContracts(); }});
+    renderJobsAdmin(); renderSubmissions(); renderContracts();
+  }
+
+  function renderJobsOnPage(){
+    const el = $('#jobs'); if(!el) return;
+    el.innerHTML = '';
+    const jobs = read('jobs');
+    if(!jobs.length){ el.innerHTML = '<div class="muted">No open positions at the moment.</div>'; return; }
+    for(const j of jobs){
+      const d = document.createElement('div'); d.className = 'card'; d.style.padding = '12px';
+      d.innerHTML = `<strong>${esc(j.title)}</strong><div class="muted">${esc(j.desc)}</div><div style="margin-top:8px"><button class="btn" data-apply>Apply</button></div>`;
+      el.appendChild(d);
+    }
+    $$('[data-apply]').forEach(b => b.addEventListener('click', ()=> alert('To apply, open the Order form and include the job title in details.')));
+  }
+  function renderJobsAdmin(){ const el = $('#job-list'); if(!el) return; el.innerHTML = ''; const jobs = read('jobs'); if(!jobs.length){ el.innerHTML = '<div class="muted">No jobs</div>'; return; } for(const j of jobs){ const d = document.createElement('div'); d.className='card'; d.style.padding='8px'; d.innerHTML = `<strong>${esc(j.title)}</strong><div class="muted" style="font-size:13px">${esc(j.desc)}</div><div class="small">Posted: ${new Date(j.created).toLocaleString()}</div>`; el.appendChild(d); } }
+  function renderSubmissions(){ const el = $('#submissions-list'); if(!el) return; el.innerHTML = ''; const subs = read('submissions'); if(!subs.length){ el.innerHTML = '<div class="muted">No submissions yet</div>'; return; } for(const s of subs){ const d = document.createElement('div'); d.className='card'; d.style.padding='8px'; d.innerHTML = `<div><strong>${esc(s.name||'—')}</strong> <span class="muted">(${esc(s.phone||'—')})</span></div><div class="small">Service: ${esc(s.service||'—')}</div><div class="muted">${esc(s.details||'')}</div><div class="small">Submitted: ${new Date(s._submittedAt).toLocaleString()}</div>`; el.appendChild(d); } }
+  function renderContracts(){ const el = $('#contracts-list'); if(!el) return; el.innerHTML = ''; const reqs = read('contracts'); if(!reqs.length){ el.innerHTML = '<div class="muted">No contract requests</div>'; return; } for(const r of reqs){ const d = document.createElement('div'); d.className='card'; d.style.padding='8px'; d.innerHTML = `<div><strong>${esc(r.company||'—')}</strong> <span class="muted">(${esc(r.contactPerson||'—')})</span></div><div class="muted">${esc(r.scope||'')}</div><div class="small">Requested: ${new Date(r._requestedAt).toLocaleString()}</div>`; el.appendChild(d); } }
+
+  // Initialize small UI bits
+  renderJobsOnPage();
+  renderCartCount();
+  renderCartItems();
+} // end wireUp()
+
+// Run when DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', wireUp);
+} else {
+  wireUp();
+                   }getCart(); if(!cart.length) return alert('Cart is empty');
     $('#modal')?.classList.add('open');
     $('#modal-title') && ($('#modal-title').innerText = 'Checkout — finalize order');
     const details = cart.map((c,i)=>`${i+1}. ${c.service} — details: ${c.details||'-'} — offer: ${c.offerPrice||'-'}`).join('\n');
@@ -1106,6 +1188,7 @@ renderCartCount();
   renderJobsOnPage();
   renderCartCount();
 });
+
 
 
 
