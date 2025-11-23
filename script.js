@@ -1,69 +1,299 @@
-// ============ CONFIG ============
-// set your actual email/phone here
+// AIMEES WD - unified script.js
+// Config - set by you
 const OWNER_EMAIL = 'adelekealameen16@gmail.com';
 const CALL_NUMBER = '+2349132252381';
-// When you create Formspree, paste the endpoint here, e.g.
-// const FORMSPREE_ENDPOINT = 'https://formspree.io/f/your-id';
-const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mjkzjdbd'; // <-- paste endpoint when ready
-// =================================
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mjkzjdbd';
 
-document.addEventListener('DOMContentLoaded', () => {
-  // default to dark (design choice you asked)
-  try{ document.documentElement.setAttribute('data-theme','dark'); }catch(e){}
+// Helper: safe query
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-  // small DOM helpers
-  const modal = document.getElementById('modal');
-  const cartModal = document.getElementById('cart-modal');
-  const contractModal = document.getElementById('contract-modal');
-  const ownerEmailEl = document.getElementById('owner-email');
-  const callLink = document.getElementById('call-link');
-  const cartCount = document.getElementById('cart-count');
-  const cartBtn = document.getElementById('cart-btn');
+// Safe innerText set
+function safeSetText(sel, txt){
+  const el = $(sel);
+  if(el) el.innerText = txt;
+}
 
-  if(ownerEmailEl) ownerEmailEl.innerText = OWNER_EMAIL;
-  if(callLink) callLink.href = 'tel:' + CALL_NUMBER;
+// simple escape for injecting values into innerHTML templates
+function esc(s){ if(typeof s !== 'string') return s; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-  // NAV: smooth scroll
-  document.querySelectorAll('[data-link]').forEach(a => {
-    a.addEventListener('click', e => { e.preventDefault(); const t = a.getAttribute('href').replace('#',''); const el = document.getElementById(t); if(el) el.scrollIntoView({behavior:'smooth'}); });
+// Local storage helpers
+function read(key){ try{ return JSON.parse(localStorage.getItem(key) || '[]'); }catch(e){ return []; } }
+function write(key, v){ localStorage.setItem(key, JSON.stringify(v)); }
+
+// Cart helpers
+function getCart(){ return read('cart'); }
+function setCart(arr){ write('cart', arr); renderCartCount(); }
+function addToCart(item){ const c = getCart(); c.push(item); setCart(c); }
+function removeFromCart(i){ const c = getCart(); c.splice(i,1); setCart(c); renderCartItems(); }
+function updateCartItem(i, fields){ const c = getCart(); c[i] = Object.assign({}, c[i], fields); setCart(c); renderCartItems(); }
+function renderCartCount(){ const el = $('#cart-count'); if(el) el.innerText = getCart().length; }
+
+// Render cart items in cart modal
+function renderCartItems(){
+  const el = $('#cart-items');
+  if(!el) return;
+  const cart = getCart();
+  el.innerHTML = '';
+  if(!cart.length){ el.innerHTML = '<div class="muted">Cart is empty</div>'; return; }
+  cart.forEach((it, idx) => {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.style.padding = '8px';
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong>${esc(it.service)}</strong>
+        <button data-idx="${idx}" class="btn remove-item">Remove</button>
+      </div>
+      <div style="margin-top:8px">
+        <label>Details</label>
+        <input data-idx="${idx}" class="cart-detail" value="${esc(it.details||'')}" placeholder="Enter brief details" />
+      </div>
+      <div style="margin-top:8px">
+        <label>Offered price</label>
+        <input data-idx="${idx}" class="cart-price" value="${esc(it.offerPrice||'')}" placeholder="e.g. 50000" />
+      </div>
+    `;
+    el.appendChild(div);
   });
 
-  // ---------------- CART FUNCTIONS ----------------
-  function getCart(){ return JSON.parse(localStorage.getItem('cart') || '[]'); }
-  function setCart(arr){ localStorage.setItem('cart', JSON.stringify(arr)); renderCartCount(); }
-  function addToCart(item){ const c = getCart(); c.push(item); setCart(c); }
-  function removeFromCart(i){ const c = getCart(); c.splice(i,1); setCart(c); renderCartItems(); }
-  function updateCartItem(i, fields){ const c = getCart(); c[i] = Object.assign({}, c[i], fields); setCart(c); renderCartItems(); }
+  // attach handlers
+  $$('.remove-item').forEach(btn => btn.addEventListener('click', (e) => {
+    const i = Number(btn.getAttribute('data-idx')); removeFromCart(i);
+  }));
+  $$('.cart-detail').forEach(inp => inp.addEventListener('change', (e) => {
+    const i = Number(inp.getAttribute('data-idx')); updateCartItem(i, { details: inp.value });
+  }));
+  $$('.cart-price').forEach(inp => inp.addEventListener('change', (e) => {
+    const i = Number(inp.getAttribute('data-idx')); updateCartItem(i, { offerPrice: inp.value });
+  }));
+}
 
-  function renderCartCount(){
-    const cnt = getCart().length;
-    if(cartCount) cartCount.innerText = cnt;
+// Dynamic options for service selector
+function renderDynamicOptions(){
+  const dyn = $('#dynamic-options');
+  const sel = $('#service-select');
+  if(!dyn || !sel) return;
+  const s = sel.value;
+  let html = '';
+  if (s === 'Graphics') {
+    html = `<div class="row"><div style="flex:1"><label>Type</label><select name="graphicType"><option>Poster</option><option>Flyer</option><option>Sticker</option></select></div><div style="width:160px"><label>Size</label><input name="graphicSize" placeholder="A4 / 4x6in" type="text"/></div></div>`;
+  } else if (s === 'Websites') {
+    html = `<div class="row"><div style="flex:1"><label>Site type</label><select name="siteType"><option>Portfolio</option><option>Business</option><option>E-commerce</option></select></div><div style="width:160px"><label>Pages</label><input name="sitePages" placeholder="e.g. Home,About,Blog,Shop"/></div></div>`;
+  } else if (s === 'WebApps') {
+    html = `<div class="row"><div style="flex:1"><label>App type</label><select name="appType"><option>Dashboard</option><option>SaaS</option><option>Internal tool</option></select></div><div style="width:160px"><label>Users</label><input name="appUsers" placeholder="small/medium/enterprise"/></div></div>`;
+  } else if (s === 'Video Edit') {
+    html = `<div class="row"><div style="flex:1"><label>Format</label><select name="videoFormat"><option>16:9</option><option>9:16</option><option>1:1</option></select></div><div style="width:160px"><label>Length</label><input name="videoLength" placeholder="seconds or minutes"/></div></div>`;
+  } else if (s === 'UI/UX Design') {
+    html = `<div class="row"><div style="flex:1"><label>Deliverable</label><select name="uiDeliverable"><option>Prototype</option><option>Design system</option><option>User testing</option></select></div><div style="width:160px"><label>Pages</label><input name="uiPages" placeholder="e.g. 5 screens"/></div></div>`;
+  } else if (s === 'Data Analysis') {
+    html = `<div class="row"><div style="flex:1"><label>Type</label><select name="dataType"><option>Report</option><option>Dashboard</option><option>Clean & Transform</option></select></div><div style="width:160px"><label>Rows</label><input name="dataRows" placeholder="e.g. 10k"/></div></div>`;
+  } else if (s === 'Consulting') {
+    html = `<div class="row"><div style="flex:1"><label>Focus</label><select name="consultFocus"><option>Architecture</option><option>Product</option><option>Security</option></select></div><div style="width:160px"><label>Hours</label><input name="consultHours" placeholder="e.g. 10"/></div></div>`;
+  } else if (s === 'Tech Support') {
+    html = `<div class="row"><div style="flex:1"><label>Level</label><select name="supportLevel"><option>Remote</option><option>Onsite</option><option>Maintenance plan</option></select></div><div style="width:160px"><label>Hours</label><input name="supportHours" placeholder="e.g. 2"/></div></div>`;
+  } else if (s === 'Support') {
+    html = `<div class="small muted">Support request — describe your issue in "Details" and we'll follow up.</div>`;
+  }
+  dyn.innerHTML = html;
+}
+
+// Save submission locally (admin demo)
+function saveSubmissionLocal(obj){
+  const arr = read('submissions'); arr.unshift(obj); write('submissions', arr);
+}
+
+// Submit order (Formspree + local storage). NO mailto fallback.
+async function submitOrderPayload(payload){
+  // local backup
+  saveSubmissionLocal(payload);
+
+  // attempt to POST to Formspree (best-effort)
+  if (FORMSPREE_ENDPOINT && FORMSPREE_ENDPOINT.length > 5) {
+    try {
+      await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+    } catch (err) {
+      console.warn('Formspree POST failed', err);
+    }
   }
 
-  function renderCartItems(){
-    const el = document.getElementById('cart-items');
-    if(!el) return;
-    el.innerHTML = '';
-    const cart = getCart();
-    if(!cart.length){ el.innerHTML = '<div class="muted">Cart is empty</div>'; return; }
-    cart.forEach((it, idx) => {
-      const div = document.createElement('div');
-      div.className = 'card';
-      div.style.padding = '8px';
-      div.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <strong>${it.service}</strong>
-          <button data-idx="${idx}" class="btn remove-item">Remove</button>
+  // success flow
+  alert('Order submitted — thank you! We will contact you soon.');
+  const form = $('#order-form');
+  if (form) form.reset();
+  $('.modal.open')?.classList.remove('open'); // close open modal if exists
+  localStorage.removeItem('cart');
+  renderCartCount();
+}
+
+// Wire up UI events (safe)
+function wireUI(){
+  // set contact details in UI if present
+  safeSetText('#owner-email', OWNER_EMAIL);
+  const callEl = $('#call-link'); if(callEl) callEl.href = 'tel:' + CALL_NUMBER;
+  const footerCall = $('#footer-call'); if(footerCall) footerCall.href = 'tel:' + CALL_NUMBER;
+  safeSetText('#year', String(new Date().getFullYear()));
+
+  // nav smooth
+  $$('[data-link]').forEach(a => a.addEventListener('click', (e) => {
+    e.preventDefault();
+    const target = a.getAttribute('href')?.replace('#','');
+    if(!target) return;
+    const el = document.getElementById(target);
+    if(el) el.scrollIntoView({behavior:'smooth'});
+  }));
+
+  // dark toggle (keeps default dark)
+  const darkToggle = $('#dark-toggle');
+  const footerDark = $('#footer-dark');
+  function setDark(enabled){ if(enabled) document.documentElement.setAttribute('data-theme','dark'); else document.documentElement.removeAttribute('data-theme'); localStorage.setItem('site-dark', enabled ? '1' : '0'); }
+  if (localStorage.getItem('site-dark') === '1') setDark(true);
+  darkToggle?.addEventListener('click', ()=> setDark(!document.documentElement.hasAttribute('data-theme')));
+  footerDark?.addEventListener('click', ()=> darkToggle?.click());
+
+  // modal open/close
+  $('#open-order')?.addEventListener('click', ()=> { $('#modal')?.classList.add('open'); renderDynamicOptions(); $('#modal-title') && ($('#modal-title').innerText = 'Create order'); });
+  $('#open-order-cta')?.addEventListener('click', ()=> { $('#modal')?.classList.add('open'); renderDynamicOptions(); });
+  $('#close-modal')?.addEventListener('click', ()=> $('#modal')?.classList.remove('open'));
+  $('#open-contract')?.addEventListener('click', ()=> $('#contract-modal')?.classList.add('open'));
+  $('#close-contract')?.addEventListener('click', ()=> $('#contract-modal')?.classList.remove('open'));
+
+  // add-to-cart (cards)
+  $$('.add-to-cart').forEach(b => b.addEventListener('click', () => {
+    const svc = b.getAttribute('data-service') || 'Service';
+    addToCart({ service: svc, details:'', offerPrice:'' });
+    alert(`${svc} added to cart`);
+  }));
+
+  // modal add-to-cart
+  $('#add-to-cart-btn')?.addEventListener('click', () => {
+    const form = $('#order-form');
+    if(!form) return alert('Order form not found');
+    const fd = new FormData(form);
+    const item = { service: fd.get('service'), details: fd.get('details')||'', offerPrice: fd.get('offerPrice')||'' };
+    addToCart(item);
+    alert('Added to cart');
+  });
+
+  // cart button open
+  $('#cart-btn')?.addEventListener('click', () => { renderCartItems(); $('#cart-modal')?.classList.add('open'); });
+
+  // clear cart
+  $('#clear-cart')?.addEventListener('click', ()=> { if(confirm('Clear cart?')){ localStorage.removeItem('cart'); renderCartItems(); renderCartCount(); }});
+
+  // checkout from cart (open modal and prefill details)
+  $('#checkout-cart')?.addEventListener('click', ()=> {
+    const cart = getCart(); if(!cart.length) return alert('Cart is empty');
+    $('#modal')?.classList.add('open');
+    $('#modal-title') && ($('#modal-title').innerText = 'Checkout — finalize order');
+    const details = cart.map((c,i)=>`${i+1}. ${c.service} — details: ${c.details||'-'} — offer: ${c.offerPrice||'-'}`).join('\n');
+    const area = document.querySelector('#order-form textarea[name="details"]');
+    if(area) area.value = details;
+  });
+
+  // dynamic options select
+  $('#service-select')?.addEventListener('change', renderDynamicOptions);
+
+  // order form submit (checkout)
+  const orderForm = $('#order-form');
+  if(orderForm){
+    orderForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const terms = $('#terms-check');
+      if(terms && !terms.checked){ alert('Please accept the Terms & Conditions before submitting'); return; }
+      const fd = new FormData(orderForm);
+      const payload = {};
+      for(const [k,v] of fd.entries()) payload[k] = v;
+      payload._submittedAt = new Date().toISOString();
+      payload.cart = getCart();
+      // save locally and send
+      await submitOrderPayload(payload);
+    });
+  }
+
+  // cart rendering helpers wired earlier
+  // contract form
+  $('#contract-form')?.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const fd = new FormData(ev.target);
+    const obj = {};
+    for(const [k,v] of fd.entries()) obj[k]=v;
+    obj._requestedAt = new Date().toISOString();
+    const arr = read('contracts'); arr.unshift(obj); write('contracts', arr);
+    alert('Contract request saved locally. We will contact you.');
+    $('#contract-modal')?.classList.remove('open');
+  });
+
+  // admin / jobs
+  $('#admin-jobs')?.addEventListener('click', ()=> {
+    const pass = prompt('Admin access — enter passphrase'); if(!pass) return; if(pass !== 'aimees-admin'){ alert('Wrong passphrase'); return; }
+    openAdmin();
+  });
+  $('#apply-job')?.addEventListener('click', ()=> alert('To apply: open the Order form and include "Applying for job" in details.'));
+
+  // admin open
+  function openAdmin(){
+    $('#modal')?.classList.add('open');
+    const panel = $('#modal .panel');
+    if(!panel) return;
+    panel.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong>Admin — Jobs, Submissions & Contracts</strong>
+        <button id="admin-close">Close</button>
+      </div>
+      <div style="display:flex;gap:10px;flex-direction:column">
+        <div class="admin">
+          <h4>Post a job / partnership</h4>
+          <label>Title</label><input id="job-title" placeholder="e.g. UI Designer" />
+          <label>Description</label><textarea id="job-desc" placeholder="Responsibilities and how to apply"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px"><button id="job-save" class="btn">Save job</button><button id="job-clear" class="btn">Clear all jobs</button></div>
+          <div style="margin-top:12px"><h5>Current jobs</h5><div id="job-list"></div></div>
         </div>
-        <div style="margin-top:8px">
-          <label>Details</label>
-          <input data-idx="${idx}" class="cart-detail" value="${it.details||''}" placeholder="Enter brief details" />
+        <div class="admin">
+          <h4>Submissions</h4><div id="submissions-list"></div><div style="margin-top:8px"><button id="clear-submissions" class="btn">Clear submissions</button></div>
         </div>
-        <div style="margin-top:8px">
-          <label>Offered price</label>
-          <input data-idx="${idx}" class="cart-price" value="${it.offerPrice||''}" placeholder="e.g. 50000" />
+        <div class="admin">
+          <h4>Contract requests</h4><div id="contracts-list"></div><div style="margin-top:8px"><button id="clear-contracts" class="btn">Clear contract requests</button></div>
         </div>
-      `;
+      </div>
+    `;
+    $('#admin-close')?.addEventListener('click', ()=> { $('#modal')?.classList.remove('open'); location.reload(); });
+    $('#job-save')?.addEventListener('click', ()=> {
+      const t = $('#job-title').value.trim(); const d = $('#job-desc').value.trim();
+      if(!t||!d) return alert('Please fill title & description');
+      const jobs = read('jobs'); jobs.unshift({ title: t, desc: d, created: new Date().toISOString() }); write('jobs', jobs);
+      renderJobsAdmin(); renderJobsOnPage();
+      $('#job-title').value=''; $('#job-desc').value='';
+    });
+    $('#job-clear')?.addEventListener('click', ()=> { if(confirm('Clear all jobs?')){ localStorage.removeItem('jobs'); renderJobsAdmin(); renderJobsOnPage(); }});
+    $('#clear-submissions')?.addEventListener('click', ()=> { if(confirm('Clear submissions?')){ localStorage.removeItem('submissions'); renderSubmissions(); }});
+    $('#clear-contracts')?.addEventListener('click', ()=> { if(confirm('Clear contract requests?')){ localStorage.removeItem('contracts'); renderContracts(); }});
+    renderJobsAdmin(); renderSubmissions(); renderContracts();
+  }
+
+  // admin renderers
+  function renderJobsOnPage(){ const el = $('#jobs'); if(!el) return; el.innerHTML=''; const jobs = read('jobs'); if(!jobs.length) return el.innerHTML = '<div class="muted">No open positions at the moment.</div>'; for(const j of jobs){ const d = document.createElement('div'); d.className='card'; d.style.padding='12px'; d.innerHTML = `<strong>${esc(j.title)}</strong><div class="muted">${esc(j.desc)}</div><div style="margin-top:8px"><button class="btn" data-apply>Apply</button></div>`; el.appendChild(d);} $$('[data-apply]').forEach(b=>b.addEventListener('click', ()=> alert('To apply, open the Order form and include the job title in details.'))); }
+  function renderJobsAdmin(){ const el = $('#job-list'); if(!el) return; el.innerHTML=''; const jobs = read('jobs'); if(!jobs.length){ el.innerHTML = '<div class="muted">No jobs</div>'; return; } for(const j of jobs){ const d = document.createElement('div'); d.className='card'; d.style.padding='8px'; d.innerHTML = `<strong>${esc(j.title)}</strong><div class="muted" style="font-size:13px">${esc(j.desc)}</div><div class="small">Posted: ${new Date(j.created).toLocaleString()}</div>`; el.appendChild(d); } }
+  function renderSubmissions(){ const el = $('#submissions-list'); if(!el) return; el.innerHTML=''; const subs = read('submissions'); if(!subs.length){ el.innerHTML = '<div class="muted">No submissions yet</div>'; return; } for(const s of subs){ const d = document.createElement('div'); d.className='card'; d.style.padding='8px'; d.innerHTML = `<div><strong>${esc(s.name||'—')}</strong> <span class="muted">(${esc(s.phone||'—')})</span></div><div class="small">Service: ${esc(s.service||'—')}</div><div class="muted">${esc(s.details||'')}</div><div class="small">Submitted: ${new Date(s._submittedAt).toLocaleString()}</div>`; el.appendChild(d);} }
+  function renderContracts(){ const el = $('#contracts-list'); if(!el) return; el.innerHTML=''; const reqs = read('contracts'); if(!reqs.length){ el.innerHTML = '<div class="muted">No contract requests</div>'; return; } for(const r of reqs){ const d = document.createElement('div'); d.className='card'; d.style.padding='8px'; d.innerHTML = `<div><strong>${esc(r.company||'—')}</strong> <span class="muted">(${esc(r.contactPerson||'—')})</span></div><div class="muted">${esc(r.scope||'')}</div><div class="small">Requested: ${new Date(r._requestedAt).toLocaleString()}</div>`; el.appendChild(d);} }
+
+  // initial render
+  renderJobsOnPage();
+  renderCartCount();
+  // For safety, attach cart items rendering to ensure buttons work
+  renderCartItems();
+} // end wireUI
+
+// Start when DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', wireUI);
+} else {
+  wireUI();
+    }      `;
       el.appendChild(div);
     });
 
@@ -876,6 +1106,7 @@ renderCartCount();
   renderJobsOnPage();
   renderCartCount();
 });
+
 
 
 
